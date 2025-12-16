@@ -1,0 +1,27 @@
+name: hackathon-mcp
+
+services:
+  php-mcp:
+    image: webdevops/php-nginx:8.4
+    platform: linux/amd64
+    restart: unless-stopped
+    working_dir: /app
+    volumes:
+      - ./:/app
+    ports:
+      - "8080:80"
+    environment:
+      # Adjust these to point at the external MySQL service on the shared network.
+      DB_HOST: mysql
+      DB_PORT: "3306"
+    networks:
+      - default
+      - talentlms-backend
+
+networks:
+  default:
+    driver: bridge
+  talentlms-backend:
+    external: true
+    name: ${TALENTLMS_NETWORK_NAME:-talentlms_backend-network}
+
