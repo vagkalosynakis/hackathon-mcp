@@ -1,0 +1,14 @@
+{
+  "name": "hackathon/mcp-server",
+  "description": "Simple MCP server example inside docker",
+  "type": "project",
+  "require": {
+    "php": "^8.1",
+    "mcp/sdk": "^0.1"
+  },
+  "config": {
+    "allow-plugins": {
+      "php-http/discovery": true
+    }
+  }
+}
