@@ -1,5 +1,8 @@
 # Project Context
 
+## Commands
+All commands should be run inside the docker container `php-mcp` not on the host machine
+
 ## Purpose
 Simple PHP MCP calculator server that exposes basic math tools and a settings resource for MCP-aware clients. Optimized for quick local/demo use via Docker Compose and stdio transport.
 
