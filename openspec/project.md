@@ -3,6 +3,9 @@
 ## Commands
 All commands should be run inside the docker container `php-mcp` not on the host machine
 
+## Possible product requirements
+The product team has asked us to potentially implement the requirements inside the `product.md` file
+
 ## Database
 The structure for the database we are consuming, can be found in `database.md`
 
