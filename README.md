@@ -19,11 +19,14 @@ docker compose exec -T -w /app php-mcp composer install
 docker compose exec -T -w /app php-mcp php server.php
 ```
 
-### Verify the MySQL connection only
-Run this to validate env/credentials without launching the MCP server:
-```bash
-docker compose exec -T -w /app php-mcp php -r "require 'vendor/autoload.php'; require 'server.php'; CalculatorElements::setConnection(createDoctrineConnection()); echo \"MySQL connection OK\\n\";"
-```
+### TalentLMS DB-backed tools (read-only)
+The server exposes read-only MCP tools that fetch raw rows from the MySQL database (no HTTP/auth calls):
+- `get_users` (`user`)
+- `get_courses` (`course`)
+- `get_certification` (`user_to_certification`)
+- `get_learner_progress` (`course_progress`)
+- `get_learning_path` (`learning_path`)
+- `get_skill_content` (`skill`)
 
 ## Database configuration
 - `DB_HOST` (default: `mysql`)

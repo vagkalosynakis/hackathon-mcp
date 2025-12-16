@@ -53,6 +53,29 @@ class CalculatorElements
         return DriverManager::getConnection($params);
     }
 
+    /**
+     * Fetch all rows from an allowed table using a fresh read-only DB connection.
+     */
+    private function fetchAllFrom(string $table): array|string
+    {
+        $tableSql = match ($table) {
+            'user' => '`user`',
+            'course' => '`course`',
+            'user_to_certification' => '`user_to_certification`',
+            'course_progress' => '`course_progress`',
+            'learning_path' => '`learning_path`',
+            'skill' => '`skill`',
+            default => throw new RuntimeException("Table '{$table}' is not allowed for read access."),
+        };
+
+        try {
+            $connection = $this->createDoctrineConnection();
+            return $connection->fetchAllAssociative("SELECT * FROM {$tableSql}");
+        } catch (DbalException|RuntimeException $exception) {
+            return 'Error: ' . $exception->getMessage();
+        }
+    }
+
     #[McpTool]
     public function add(int $a, int $b): int
     {
@@ -75,6 +98,42 @@ class CalculatorElements
             'divide' => $b != 0 ? $a / $b : 'Error: Division by zero',
             default => 'Error: Unknown operation',
         };
+    }
+
+    #[McpTool(name: 'get_users')]
+    public function getUsers(): array|string
+    {
+        return $this->fetchAllFrom('user');
+    }
+
+    #[McpTool(name: 'get_courses')]
+    public function getCourses(): array|string
+    {
+        return $this->fetchAllFrom('course');
+    }
+
+    #[McpTool(name: 'get_certification')]
+    public function getCertification(): array|string
+    {
+        return $this->fetchAllFrom('user_to_certification');
+    }
+
+    #[McpTool(name: 'get_learner_progress')]
+    public function getLearnerProgress(): array|string
+    {
+        return $this->fetchAllFrom('course_progress');
+    }
+
+    #[McpTool(name: 'get_learning_path')]
+    public function getLearningPath(): array|string
+    {
+        return $this->fetchAllFrom('learning_path');
+    }
+
+    #[McpTool(name: 'get_skill_content')]
+    public function getSkillContent(): array|string
+    {
+        return $this->fetchAllFrom('skill');
     }
 
     #[McpResource(
