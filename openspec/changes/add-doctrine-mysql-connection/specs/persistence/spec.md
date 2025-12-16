@@ -14,3 +14,14 @@ The system SHALL provide a Doctrine DB connection to the external `mysql` servic
 - **WHEN** the container runs on the configured external Docker network
 - **THEN** the connection uses host `mysql` and port `3306` to reach the MySQL service and reports connectivity failures clearly if the service is unreachable
 
+### Requirement: List courses tool
+The system SHALL expose an MCP tool `list_courses` that uses the Doctrine MySQL connection to fetch all records from the `course` table and return them to the caller.
+
+#### Scenario: Courses retrieved successfully
+- **WHEN** the `list_courses` tool is invoked and the database is reachable
+- **THEN** the server returns all rows from the `course` table as structured data
+
+#### Scenario: Database unavailable
+- **WHEN** the `list_courses` tool is invoked but the connection fails (bad credentials or unreachable host)
+- **THEN** the server returns an error message indicating the connection problem
+

@@ -19,6 +19,21 @@ docker compose exec -T -w /app php-mcp composer install
 docker compose exec -T -w /app php-mcp php server.php
 ```
 
+### Verify the MySQL connection only
+Run this to validate env/credentials without launching the MCP server:
+```bash
+docker compose exec -T -w /app php-mcp php -r "require 'vendor/autoload.php'; require 'server.php'; CalculatorElements::setConnection(createDoctrineConnection()); echo \"MySQL connection OK\\n\";"
+```
+
+## Database configuration
+- `DB_HOST` (default: `mysql`)
+- `DB_PORT` (default: `3306`)
+- `DB_NAME` (default: `local_sandbox`)
+- `DB_USER` (default: `usr_local_sandbox176580221027`)
+- `DB_PASSWORD` (default: `5GyGpkvv@l`)
+
+The MySQL service is expected to be reachable on the external Docker network `talentlms_backend-network` (configurable via `TALENTLMS_NETWORK_NAME`). Startup fails fast with an actionable error if credentials or connectivity are invalid.
+
 ## Test with MCP Inspector
 ```bash
 npx @modelcontextprotocol/inspector docker compose exec -T -w /app php-mcp php server.php

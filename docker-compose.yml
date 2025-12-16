@@ -14,6 +14,9 @@ services:
       # Adjust these to point at the external MySQL service on the shared network.
       DB_HOST: mysql
       DB_PORT: "3306"
+      DB_NAME: local_sandbox
+      DB_USER: usr_local_sandbox176580221027
+      DB_PASSWORD: 5GyGpkvv@l
     networks:
       - default
       - talentlms-backend
