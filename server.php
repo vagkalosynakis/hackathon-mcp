@@ -106,12 +106,11 @@ class CalculatorElements
         };
     }
 
-    #[McpTool(name: 'get_users')]
-    public function getUsers(
-        #[Schema(type: 'number')] int|float|null $pageNumber = null,
-        #[Schema(type: 'number')] int|float|null $pageSize = null,
-        #[Schema(type: 'string')] string|null $filterKeywordLike = null
-    ): array|string {
+    private function buildPageFilterParams(
+        int|float|null $pageNumber,
+        int|float|null $pageSize,
+        ?string $filterKeywordLike
+    ): array {
         $queryParams = [];
 
         if ($pageNumber !== null) {
@@ -124,37 +123,69 @@ class CalculatorElements
             $queryParams['filter']['keyword']['like'] = $filterKeywordLike;
         }
 
+        return $queryParams;
+    }
+
+    #[McpTool(name: 'get_users')]
+    public function getUsers(
+        #[Schema(type: 'number')] int|float|null $pageNumber = null,
+        #[Schema(type: 'number')] int|float|null $pageSize = null,
+        #[Schema(type: 'string')] string|null $filterKeywordLike = null
+    ): array|string {
+        $queryParams = $this->buildPageFilterParams($pageNumber, $pageSize, $filterKeywordLike);
         return $this->talentLmsGet('api/v2/users', $queryParams);
     }
 
     #[McpTool(name: 'get_courses')]
-    public function getCourses(): array|string
-    {
-        return $this->talentLmsGet('api/v2/courses');
+    public function getCourses(
+        #[Schema(type: 'number')] int|float|null $pageNumber = null,
+        #[Schema(type: 'number')] int|float|null $pageSize = null,
+        #[Schema(type: 'string')] string|null $filterKeywordLike = null
+    ): array|string {
+        $queryParams = $this->buildPageFilterParams($pageNumber, $pageSize, $filterKeywordLike);
+        return $this->talentLmsGet('api/v2/courses', $queryParams);
     }
 
-    #[McpTool(name: 'get_certification')]
-    public function getCertification(): array|string
-    {
-        return 'test';
+    #[McpTool(name: 'get_groups')]
+    public function getGroups(
+        #[Schema(type: 'number')] int|float|null $pageNumber = null,
+        #[Schema(type: 'number')] int|float|null $pageSize = null,
+        #[Schema(type: 'string')] string|null $filterKeywordLike = null
+    ): array|string {
+        $queryParams = $this->buildPageFilterParams($pageNumber, $pageSize, $filterKeywordLike);
+        return $this->talentLmsGet('api/v2/groups', $queryParams);
     }
 
-    #[McpTool(name: 'get_learner_progress')]
-    public function getLearnerProgress(): array|string
-    {
-        return 'test';
+    #[McpTool(name: 'get_branches')]
+    public function getBranches(
+        #[Schema(type: 'number')] int|float|null $pageNumber = null,
+        #[Schema(type: 'number')] int|float|null $pageSize = null,
+        #[Schema(type: 'string')] string|null $filterKeywordLike = null
+    ): array|string {
+        $queryParams = $this->buildPageFilterParams($pageNumber, $pageSize, $filterKeywordLike);
+        return $this->talentLmsGet('api/v2/branches', $queryParams);
     }
 
-    #[McpTool(name: 'get_learning_path')]
-    public function getLearningPath(): array|string
-    {
-        return 'test';
+    #[McpTool(name: 'get_categories')]
+    public function getCategories(
+        #[Schema(type: 'number')] int|float|null $pageNumber = null,
+        #[Schema(type: 'number')] int|float|null $pageSize = null,
+        #[Schema(type: 'string')] string|null $filterKeywordLike = null
+    ): array|string {
+        $queryParams = $this->buildPageFilterParams($pageNumber, $pageSize, $filterKeywordLike);
+        return $this->talentLmsGet('api/v2/categories', $queryParams);
     }
 
-    #[McpTool(name: 'get_skill_content')]
-    public function getSkillContent(): array|string
-    {
-        return 'test';
+    #[McpTool(name: 'get_units')]
+    public function getUnits(
+        #[Schema(type: 'string')] string $unitId,
+        #[Schema(type: 'number')] int|float|null $pageNumber = null,
+        #[Schema(type: 'number')] int|float|null $pageSize = null,
+        #[Schema(type: 'string')] string|null $filterKeywordLike = null
+    ): array|string {
+        $queryParams = $this->buildPageFilterParams($pageNumber, $pageSize, $filterKeywordLike);
+        $path = 'api/v2/units/' . rawurlencode($unitId) . '/sessions';
+        return $this->talentLmsGet($path, $queryParams);
     }
 
     #[McpResource(
