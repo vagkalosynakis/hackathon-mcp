@@ -63,6 +63,12 @@ Use an absolute Compose file path so the AI tool can find it even when launched 
         "/Users/ekalosynakis/projects/hackathon-mcp/docker-compose.yml",
         "exec",
         "-T",
+        "-e",
+        "MCP_BEARER_TOKEN",
+        "-e",
+        "TALENTLMS_BASE_URL",
+        "-e",
+        "TALENTLMS_API_VERSION",
         "-w",
         "/app",
         "php-mcp",
@@ -74,6 +80,11 @@ Use an absolute Compose file path so the AI tool can find it even when launched 
 }
 ```
 Then restart/reload your AI client’s MCP servers. If you see “missing compose configuration file,” double-check the absolute `-f` path points to this repo’s `docker-compose.yml`.
+
+Environment variables (all required):
+- `MCP_BEARER_TOKEN`: TalentLMS API key, used for `X-API-Key`.
+- `TALENTLMS_BASE_URL`: TalentLMS base URL for HTTP calls.
+- `TALENTLMS_API_VERSION`: TalentLMS API version header value.
 
 ## Notes
 - The project depends on `mcp/sdk`; Composer config already allows needed plugins.

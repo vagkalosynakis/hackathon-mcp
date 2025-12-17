@@ -7,8 +7,10 @@ All commands should be run inside the docker container `php-mcp` not on the host
 The product team has asked us to potentially implement the requirements inside the `product.md` file. The system must remain read-only: no persistence writes, no side effects beyond fetching data from the TalentLMS HTTP API.
 
 ## TalentLMS API
-- Base URL: `https://plusfe.dev.talentlms.com`
-- Required headers on every call: `X-API-Version: 2025-01-01`, `X-API-Key: f1TgCRTTNHEz7JrNFDLR2IDj4eUknI`
+- Base URL: `TALENTLMS_BASE_URL` env var (required; no default)
+- Required headers on every call:
+  - `X-API-Version: <value of TALENTLMS_API_VERSION env var>` (required; no default)
+  - `X-API-Key: <value of MCP_BEARER_TOKEN env var>` (required)
 - Reference: `TalentLMS Public API.postman_collection.json` (pagination, filtering, examples)
 
 ## Purpose
