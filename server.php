@@ -9,16 +9,44 @@ use Mcp\Capability\Attribute\McpTool;
 use Mcp\Capability\Attribute\Schema;
 use Mcp\Server;
 use Mcp\Server\Transport\StdioTransport;
+use RuntimeException;
 
 class CalculatorElements
 {
-    private const TALENTLMS_BASE_URL = 'https://plusfe.dev.talentlms.com';
-    private const TALENTLMS_API_VERSION = '2025-01-01';
-    private const TALENTLMS_API_KEY = 'f1TgCRTTNHEz7JrNFDLR2IDj4eUknI';
 
     private function buildTalentLmsUrl(string $path): string
     {
-        return rtrim(self::TALENTLMS_BASE_URL, '/') . '/' . ltrim($path, '/');
+        return $this->getTalentLmsBaseUrl() . '/' . ltrim($path, '/');
+    }
+
+    private function getApiToken(): string
+    {
+        $token = getenv('MCP_BEARER_TOKEN');
+        if ($token === false || $token === '') {
+            throw new RuntimeException('Missing MCP_BEARER_TOKEN environment variable.');
+        }
+
+        return $token;
+    }
+
+    private function getTalentLmsBaseUrl(): string
+    {
+        $baseUrl = getenv('TALENTLMS_BASE_URL');
+        if ($baseUrl === false || trim($baseUrl) === '') {
+            throw new RuntimeException('Missing TALENTLMS_BASE_URL environment variable.');
+        }
+
+        return rtrim($baseUrl, '/');
+    }
+
+    private function getTalentLmsApiVersion(): string
+    {
+        $apiVersion = getenv('TALENTLMS_API_VERSION');
+        if ($apiVersion === false || trim($apiVersion) === '') {
+            throw new RuntimeException('Missing TALENTLMS_API_VERSION environment variable.');
+        }
+
+        return $apiVersion;
     }
 
     /**
@@ -30,8 +58,8 @@ class CalculatorElements
         $url = $this->buildTalentLmsUrl($path) . ($queryString !== '' ? '?' . $queryString : '');
         $headers = [
             'Accept: application/json',
-            'X-API-Version: ' . self::TALENTLMS_API_VERSION,
-            'X-API-Key: ' . self::TALENTLMS_API_KEY,
+            'X-API-Version: ' . $this->getTalentLmsApiVersion(),
+            'X-API-Key: ' . $this->getApiToken(),
         ];
 
         $ch = curl_init($url);
