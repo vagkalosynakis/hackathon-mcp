@@ -15,6 +15,62 @@ use RuntimeException;
 
 class CalculatorElements
 {
+    private const TALENTLMS_BASE_URL = 'https://plusfe.dev.talentlms.com';
+    private const TALENTLMS_API_VERSION = '2025-01-01';
+    private const TALENTLMS_API_KEY = 'f1TgCRTTNHEz7JrNFDLR2IDj4eUknI';
+
+    private function buildTalentLmsUrl(string $path): string
+    {
+        return rtrim(self::TALENTLMS_BASE_URL, '/') . '/' . ltrim($path, '/');
+    }
+
+    /**
+     * Perform a GET request to the TalentLMS API with required headers.
+     */
+    private function talentLmsGet(string $path): array|string
+    {
+        $url = $this->buildTalentLmsUrl($path);
+        $headers = [
+            'Accept: application/json',
+            'X-API-Version: ' . self::TALENTLMS_API_VERSION,
+            'X-API-Key: ' . self::TALENTLMS_API_KEY,
+        ];
+
+        $ch = curl_init($url);
+        if ($ch === false) {
+            return 'Error: Unable to initialize HTTP client.';
+        }
+
+        curl_setopt_array($ch, [
+            CURLOPT_RETURNTRANSFER => true,
+            CURLOPT_FOLLOWLOCATION => true,
+            CURLOPT_TIMEOUT => 10,
+            CURLOPT_CONNECTTIMEOUT => 5,
+            CURLOPT_HTTPHEADER => $headers,
+        ]);
+
+        $responseBody = curl_exec($ch);
+        if ($responseBody === false) {
+            $error = curl_error($ch);
+            curl_close($ch);
+            return 'Error: HTTP request failed - ' . $error;
+        }
+
+        $statusCode = curl_getinfo($ch, CURLINFO_HTTP_CODE);
+        curl_close($ch);
+
+        if ($statusCode < 200 || $statusCode >= 300) {
+            return 'Error: TalentLMS responded with HTTP ' . $statusCode . '.';
+        }
+
+        $decoded = json_decode($responseBody, true);
+        if ($decoded === null && json_last_error() !== JSON_ERROR_NONE) {
+            return 'Error: Failed to decode JSON response - ' . json_last_error_msg();
+        }
+
+        return $decoded;
+    }
+
     private function buildDbParams(): array
     {
         $host = getenv('DB_HOST') ?: 'mysql';
@@ -103,7 +159,7 @@ class CalculatorElements
     #[McpTool(name: 'get_users')]
     public function getUsers(): array|string
     {
-        return $this->fetchAllFrom('user');
+        return $this->talentLmsGet('api/v2/users');
     }
 
     #[McpTool(name: 'get_courses')]
