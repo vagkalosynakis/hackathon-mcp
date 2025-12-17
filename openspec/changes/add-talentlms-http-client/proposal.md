@@ -7,6 +7,7 @@ We need to stop querying the database directly and instead call the TalentLMS HT
 - Add a shared HTTP client configured with base URL `https://plusfe.dev.talentlms.com` and headers `X-API-Version: 2025-01-01`, `X-API-Key: f1TgCRTTNHEz7JrNFDLR2IDj4eUknI`.
 - Update the `get_users` MCP tool to fetch users via `{{baseUrl}}/api/v2/users` using that client (no DB access).
 - Add error handling for HTTP failures/timeouts and surface clear error messages to MCP clients.
+- Document pagination and filtering options from `TalentLMS Public API.postman_collection.json` for `get_users` (e.g., `page[number]`, `page[size]`, `filter[login][eq]`) and update README/project docs to remove DB references.
 - Prepare the path for migrating remaining TalentLMS tools from DB reads to HTTP calls.
 
 ## Impact

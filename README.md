@@ -19,23 +19,15 @@ docker compose exec -T -w /app php-mcp composer install
 docker compose exec -T -w /app php-mcp php server.php
 ```
 
-### TalentLMS DB-backed tools (read-only)
-The server exposes read-only MCP tools that fetch raw rows from the MySQL database (no HTTP/auth calls):
-- `get_users` (`user`)
-- `get_courses` (`course`)
-- `get_certification` (`user_to_certification`)
-- `get_learner_progress` (`course_progress`)
-- `get_learning_path` (`learning_path`)
-- `get_skill_content` (`skill`)
+### TalentLMS HTTP tools (read-only)
+The server calls the TalentLMS HTTP API using:
+- Base URL: `https://plusfe.dev.talentlms.com`
+- Headers: `X-API-Version: 2025-01-01`, `X-API-Key: f1TgCRTTNHEz7JrNFDLR2IDj4eUknI`
 
-## Database configuration
-- `DB_HOST` (default: `mysql`)
-- `DB_PORT` (default: `3306`)
-- `DB_NAME` (default: `local_sandbox`)
-- `DB_USER` (default: `usr_local_sandbox176580221027`)
-- `DB_PASSWORD` (default: `5GyGpkvv@l`)
+Implemented so far:
+- `get_users` → `{{baseUrl}}/api/v2/users` (supports TalentLMS pagination and filtering query params; responses are pass-through JSON)
 
-The MySQL service is expected to be reachable on the external Docker network `talentlms_backend-network` (configurable via `TALENTLMS_NETWORK_NAME`). Startup fails fast with an actionable error if credentials or connectivity are invalid.
+Reference for pagination/filtering and examples: `TalentLMS Public API.postman_collection.json` (see “Get all users” request and pagination section).
 
 ## Test with MCP Inspector
 ```bash

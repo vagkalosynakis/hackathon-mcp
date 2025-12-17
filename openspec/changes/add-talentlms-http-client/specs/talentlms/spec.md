@@ -21,3 +21,14 @@ The system SHALL expose an MCP tool `get_users` that fetches users from `{{baseU
 - **WHEN** `get_users` is invoked but the TalentLMS API is unreachable or returns an error
 - **THEN** the tool returns an error describing the HTTP failure
 
+### Requirement: TalentLMS user pagination and filtering
+The system SHALL support passing TalentLMS pagination and filtering query parameters (e.g., `page[number]`, `page[size]`, `filter[login][eq]`) to the `get_users` endpoint and return the paginated JSON (including `_links` and `_meta`) as provided by TalentLMS.
+
+#### Scenario: Paginated users retrieved
+- **WHEN** `get_users` is invoked with pagination parameters
+- **THEN** the request includes the provided `page[number]`/`page[size]` values and the response includes TalentLMS pagination metadata from `_links` and `_meta`
+
+#### Scenario: Filtered users retrieved
+- **WHEN** `get_users` is invoked with a filter such as `filter[login][eq]=admin`
+- **THEN** the request forwards the filter parameter and returns the filtered user list or an HTTP error from TalentLMS
+

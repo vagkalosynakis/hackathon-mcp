@@ -4,10 +4,12 @@
 All commands should be run inside the docker container `php-mcp` not on the host machine
 
 ## Possible product requirements
-The product team has asked us to potentially implement the requirements inside the `product.md` file. It should ***NEVER*** update the DB with anything. It should ***ALWAYS*** implement only fetching logic. No changes to the DB is allowed.
+The product team has asked us to potentially implement the requirements inside the `product.md` file. The system must remain read-only: no persistence writes, no side effects beyond fetching data from the TalentLMS HTTP API.
 
-## Database
-The structure for the database we are consuming, can be found in `database.md`
+## TalentLMS API
+- Base URL: `https://plusfe.dev.talentlms.com`
+- Required headers on every call: `X-API-Version: 2025-01-01`, `X-API-Key: f1TgCRTTNHEz7JrNFDLR2IDj4eUknI`
+- Reference: `TalentLMS Public API.postman_collection.json` (pagination, filtering, examples)
 
 ## Purpose
 Simple PHP MCP calculator server that exposes basic math tools and a settings resource for MCP-aware clients. Optimized for quick local/demo use via Docker Compose and stdio transport.
@@ -30,7 +32,7 @@ Simple PHP MCP calculator server that exposes basic math tools and a settings re
 ### Architecture Patterns
 - Single MCP server built with `Mcp\Server::builder()` using `StdioTransport`
 - `CalculatorElements` hosts all MCP tools/resources; discovery rooted at repo path
-- Container runtime mounts the repo at `/app`; nginx/php image provides PHP-FPM + web server (HTTP not used today)
+- Container runtime mounts the repo at `/app`; nginx/php image provides PHP-FPM + web server; outbound HTTP is used for TalentLMS API access
 
 ### Testing Strategy
 - Manual sanity: `docker compose exec -T -w /app php-mcp php server.php`
@@ -43,6 +45,7 @@ Simple PHP MCP calculator server that exposes basic math tools and a settings re
 
 ## Domain Context
 - Exposed MCP tools: `add(int,int)`, `subtract(int,int)`, `calculate(float,float,operation)` supporting add/subtract/multiply/divide with simple error strings
+- TalentLMS tools (e.g., `get_users`) fetch data via HTTP from the TalentLMS API using the required headers; responses are pass-through JSON
 - MCP resource: `config://calculator/settings` returns calculator settings JSON (e.g., precision, allow_negative)
 - Intended for integration with MCP-aware clients (e.g., Claude Desktop) over stdio
 
