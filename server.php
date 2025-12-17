@@ -140,9 +140,13 @@ class CalculatorElements
     public function getCourses(
         #[Schema(type: 'number')] int|float|null $pageNumber = null,
         #[Schema(type: 'number')] int|float|null $pageSize = null,
-        #[Schema(type: 'string')] string|null $filterKeywordLike = null
+        #[Schema(type: 'string')] string|null $filterKeywordLike = null,
+        #[Schema(type: 'string')] string|null $filterCategoryLike = null
     ): array|string {
         $queryParams = $this->buildPageFilterParams($pageNumber, $pageSize, $filterKeywordLike);
+        if ($filterCategoryLike !== null && $filterCategoryLike !== '') {
+            $queryParams['filter']['category']['like'] = $filterCategoryLike;
+        }
         return $this->talentLmsGet('api/v2/courses', $queryParams);
     }
 
