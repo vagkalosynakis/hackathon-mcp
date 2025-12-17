@@ -25,7 +25,12 @@ The server calls the TalentLMS HTTP API using:
 - Headers: `X-API-Version: 2025-01-01`, `X-API-Key: f1TgCRTTNHEz7JrNFDLR2IDj4eUknI`
 
 Implemented so far:
-- `get_users` → `{{baseUrl}}/api/v2/users` (supports TalentLMS pagination and filtering query params; responses are pass-through JSON)
+- `get_users(page_number?, page_size?, filter_keyword_like?)` → `{{baseUrl}}/api/v2/users`
+  - Explicit params:
+    - `page_number` → `page[number]`
+    - `page_size` → `page[size]`
+    - `filter_keyword_like` → `filter[keyword][like]` (searches across predefined fields)
+  - Returns the TalentLMS JSON response including `_links` and `_meta` pagination blocks
 
 Reference for pagination/filtering and examples: `TalentLMS Public API.postman_collection.json` (see “Get all users” request and pagination section).
 
