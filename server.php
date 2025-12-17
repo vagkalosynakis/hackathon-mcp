@@ -9,10 +9,6 @@ use Mcp\Capability\Attribute\McpTool;
 use Mcp\Capability\Attribute\Schema;
 use Mcp\Server;
 use Mcp\Server\Transport\StdioTransport;
-use Doctrine\DBAL\Connection;
-use Doctrine\DBAL\DriverManager;
-use Doctrine\DBAL\Exception as DbalException;
-use RuntimeException;
 
 class CalculatorElements
 {
@@ -86,67 +82,6 @@ class CalculatorElements
         return http_build_query($queryParams);
     }
 
-    private function buildDbParams(): array
-    {
-        $host = getenv('DB_HOST') ?: 'mysql';
-        $dbName = getenv('DB_NAME') ?: 'local_sandbox';
-        $user = getenv('DB_USER') ?: 'usr_local_sandbox176580221027';
-        $password = getenv('DB_PASSWORD') ?: '5GyGpkvv@l';
-        $portRaw = getenv('DB_PORT') ?: '3306';
-
-        if ($host === '' || $dbName === '' || $user === '' || $password === '') {
-            throw new RuntimeException('Database configuration is incomplete (host, name, user, or password missing).');
-        }
-
-        if (!ctype_digit($portRaw)) {
-            throw new RuntimeException("Invalid DB_PORT value '{$portRaw}'. It must be an integer.");
-        }
-
-        $port = (int)$portRaw;
-        if ($port <= 0 || $port > 65535) {
-            throw new RuntimeException("Invalid DB_PORT value '{$portRaw}'. It must be between 1 and 65535.");
-        }
-
-        return [
-            'driver' => 'pdo_mysql',
-            'host' => $host,
-            'port' => $port,
-            'dbname' => $dbName,
-            'user' => $user,
-            'password' => $password,
-            'charset' => 'utf8mb4',
-        ];
-    }
-
-    private function createDoctrineConnection(): Connection
-    {
-        $params = $this->buildDbParams();
-        return DriverManager::getConnection($params);
-    }
-
-    /**
-     * Fetch all rows from an allowed table using a fresh read-only DB connection.
-     */
-    private function fetchAllFrom(string $table): array|string
-    {
-        $tableSql = match ($table) {
-            'user' => '`user`',
-            'course' => '`course`',
-            'user_to_certification' => '`user_to_certification`',
-            'course_progress' => '`course_progress`',
-            'learning_path' => '`learning_path`',
-            'skill' => '`skill`',
-            default => throw new RuntimeException("Table '{$table}' is not allowed for read access."),
-        };
-
-        try {
-            $connection = $this->createDoctrineConnection();
-            return $connection->fetchAllAssociative("SELECT * FROM {$tableSql}");
-        } catch (DbalException|RuntimeException $exception) {
-            return 'Error: ' . $exception->getMessage();
-        }
-    }
-
     #[McpTool]
     public function add(int $a, int $b): int
     {
@@ -195,31 +130,31 @@ class CalculatorElements
     #[McpTool(name: 'get_courses')]
     public function getCourses(): array|string
     {
-        return $this->fetchAllFrom('course');
+        return $this->talentLmsGet('api/v2/courses');
     }
 
     #[McpTool(name: 'get_certification')]
     public function getCertification(): array|string
     {
-        return $this->fetchAllFrom('user_to_certification');
+        return 'test';
     }
 
     #[McpTool(name: 'get_learner_progress')]
     public function getLearnerProgress(): array|string
     {
-        return $this->fetchAllFrom('course_progress');
+        return 'test';
     }
 
     #[McpTool(name: 'get_learning_path')]
     public function getLearningPath(): array|string
     {
-        return $this->fetchAllFrom('learning_path');
+        return 'test';
     }
 
     #[McpTool(name: 'get_skill_content')]
     public function getSkillContent(): array|string
     {
-        return $this->fetchAllFrom('skill');
+        return 'test';
     }
 
     #[McpResource(
@@ -235,12 +170,7 @@ class CalculatorElements
     #[McpTool(name: 'list_courses')]
     public function listCourses(): array|string
     {
-        try {
-            $connection = $this->createDoctrineConnection();
-            return $connection->fetchAllAssociative('SELECT * FROM course');
-        } catch (DbalException|RuntimeException $exception) {
-            return 'Error: ' . $exception->getMessage();
-        }
+        return $this->talentLmsGet('api/v2/courses');
     }
 }
 

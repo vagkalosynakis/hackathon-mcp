@@ -31,6 +31,14 @@ Implemented so far:
     - `page_size` → `page[size]`
     - `filter_keyword_like` → `filter[keyword][like]` (searches across predefined fields)
   - Returns the TalentLMS JSON response including `_links` and `_meta` pagination blocks
+- `get_courses()` → `{{baseUrl}}/api/v2/courses`
+
+Exposed (HTTP-only, in-progress wiring):
+- `get_certification()`
+- `get_learner_progress()`
+- `get_learning_path()`
+- `get_skill_content()`
+- `list_courses()`
 
 Reference for pagination/filtering and examples: `TalentLMS Public API.postman_collection.json` (see “Get all users” request and pagination section).
 
@@ -38,7 +46,7 @@ Reference for pagination/filtering and examples: `TalentLMS Public API.postman_c
 ```bash
 npx @modelcontextprotocol/inspector docker compose exec -T -w /app php-mcp php server.php
 ```
-The inspector should show tools `add`, `calculate`, and resource `config://calculator/settings`.
+The inspector should show tools `add`, `subtract`, `calculate`, `get_users`, `get_courses`, `get_certification`, `get_learner_progress`, `get_learning_path`, `get_skill_content`, `list_courses`, and resource `config://calculator/settings`. Some TalentLMS tools currently return an informative HTTP-not-implemented message while endpoints are being wired.
 
 ## Add to an AI tool (e.g., Claude Desktop)
 Use an absolute Compose file path so the AI tool can find it even when launched elsewhere.
