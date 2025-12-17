@@ -6,6 +6,7 @@ require_once __DIR__ . '/vendor/autoload.php';
 
 use Mcp\Capability\Attribute\McpResource;
 use Mcp\Capability\Attribute\McpTool;
+use Mcp\Capability\Attribute\Schema;
 use Mcp\Server;
 use Mcp\Server\Transport\StdioTransport;
 use Doctrine\DBAL\Connection;
@@ -27,9 +28,10 @@ class CalculatorElements
     /**
      * Perform a GET request to the TalentLMS API with required headers.
      */
-    private function talentLmsGet(string $path): array|string
+    private function talentLmsGet(string $path, array|string $queryParams = []): array|string
     {
-        $url = $this->buildTalentLmsUrl($path);
+        $queryString = $this->buildQueryString($queryParams);
+        $url = $this->buildTalentLmsUrl($path) . ($queryString !== '' ? '?' . $queryString : '');
         $headers = [
             'Accept: application/json',
             'X-API-Version: ' . self::TALENTLMS_API_VERSION,
@@ -69,6 +71,19 @@ class CalculatorElements
         }
 
         return $decoded;
+    }
+
+    private function buildQueryString(array|string $queryParams): string
+    {
+        if (is_string($queryParams)) {
+            return trim($queryParams);
+        }
+
+        if ($queryParams === []) {
+            return '';
+        }
+
+        return http_build_query($queryParams);
     }
 
     private function buildDbParams(): array
@@ -157,9 +172,24 @@ class CalculatorElements
     }
 
     #[McpTool(name: 'get_users')]
-    public function getUsers(): array|string
-    {
-        return $this->talentLmsGet('api/v2/users');
+    public function getUsers(
+        #[Schema(type: 'number')] int|float|null $pageNumber = null,
+        #[Schema(type: 'number')] int|float|null $pageSize = null,
+        #[Schema(type: 'string')] string|null $filterKeywordLike = null
+    ): array|string {
+        $queryParams = [];
+
+        if ($pageNumber !== null) {
+            $queryParams['page']['number'] = (int)$pageNumber;
+        }
+        if ($pageSize !== null) {
+            $queryParams['page']['size'] = (int)$pageSize;
+        }
+        if ($filterKeywordLike !== null && $filterKeywordLike !== '') {
+            $queryParams['filter']['keyword']['like'] = $filterKeywordLike;
+        }
+
+        return $this->talentLmsGet('api/v2/users', $queryParams);
     }
 
     #[McpTool(name: 'get_courses')]
