@@ -74,4 +74,4 @@ Then restart/reload your AI client’s MCP servers. If you see “missing compos
 - The project depends on `mcp/sdk`; Composer config already allows needed plugins.
 - Containers mount the repo at `/app` and expose port `8080:80` (from `docker-compose.yml`).
 
-My first pr.
+My first PR.
