@@ -1,8 +1,11 @@
 <?php
-// Minimal hello world endpoint
-echo 'Hello world';
+declare(strict_types=1);
 
-// my balance
-// send money
-// past transactions
-// pay bills
+header('Content-Type: application/json');
+
+echo json_encode([
+    'server'  => 'Fintech MCP Server',
+    'version' => '1.0.0',
+    'status'  => 'ok',
+    'tools'   => ['get_balance', 'send_money', 'get_transactions', 'pay_bill'],
+]);
