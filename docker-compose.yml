@@ -8,6 +8,7 @@ services:
     working_dir: /app
     volumes:
       - ./:/app
+      - ./docker/nginx/mcp.conf:/opt/docker/etc/nginx/vhost.common.d/20-mcp.conf:ro
     ports:
       - "8080:80"
     environment:
