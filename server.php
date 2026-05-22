@@ -12,6 +12,16 @@ use Mcp\Server\Transport\StdioTransport;
 
 class FintechTools
 {
+    private ?\Faker\Generator $fakerInstance = null;
+
+    private function faker(): \Faker\Generator
+    {
+        if ($this->fakerInstance === null) {
+            $this->fakerInstance = \Faker\Factory::create();
+        }
+        return $this->fakerInstance;
+    }
+
     private function getBaseUrl(): string
     {
         $url = getenv('FINTECH_API_BASE_URL');
@@ -126,11 +136,12 @@ class FintechTools
         }
 
         // DUMMY — returned when backend is unavailable
+        $faker = $this->faker();
         return [
             'accountId' => $accountId,
-            'balance'   => 4250.75,
-            'currency'  => 'EUR',
-            'asOf'      => date('c'),
+            'balance'   => $faker->randomFloat(2, 100, 50000),
+            'currency'  => $faker->randomElement(['EUR', 'USD', 'GBP', 'CHF']),
+            'asOf'      => $faker->dateTimeBetween('-1 minute', 'now')->format('c'),
         ];
     }
 
@@ -183,15 +194,16 @@ class FintechTools
         }
 
         // DUMMY — returned when backend is unavailable
+        $faker = $this->faker();
         return [
-            'transferId'    => 'txf_' . substr(md5(uniqid('', true)), 0, 12),
-            'status'        => 'pending',
+            'transferId'    => $faker->uuid(),
+            'status'        => $faker->randomElement(['pending', 'completed']),
             'fromAccountId' => $fromAccountId,
             'toAccountId'   => $toAccountId,
             'amount'        => $amount,
             'currency'      => $currency,
             'reference'     => $reference,
-            'createdAt'     => date('c'),
+            'createdAt'     => $faker->dateTimeBetween('-1 minute', 'now')->format('c'),
         ];
     }
 
@@ -240,37 +252,31 @@ class FintechTools
         }
 
         // DUMMY — returned when backend is unavailable
+        $faker = $this->faker();
+        $rowCount = min($params['limit'], 10);
+        $currencies = ['EUR', 'USD', 'GBP', 'CHF'];
+        $descriptions = [
+            'debit'  => ['Supermarket purchase', 'Online shopping', 'Restaurant dinner', 'Fuel station', 'Pharmacy', 'Streaming subscription', 'Utility bill', 'Insurance payment', 'Coffee shop', 'Transport ticket'],
+            'credit' => ['Salary payment', 'Freelance invoice', 'Refund received', 'Bank interest', 'Transfer received', 'Cashback reward', 'Dividend payment'],
+        ];
+        $transactions = [];
+        for ($i = 0; $i < $rowCount; $i++) {
+            $type = $faker->randomElement(['debit', 'credit']);
+            $transactions[] = [
+                'transactionId' => $faker->uuid(),
+                'type'          => $type,
+                'amount'        => $faker->randomFloat(2, 1, 5000),
+                'currency'      => $faker->randomElement($currencies),
+                'description'   => $faker->randomElement($descriptions[$type]),
+                'date'          => $faker->dateTimeBetween('-90 days', 'now')->format('Y-m-d'),
+            ];
+        }
         return [
             'accountId'    => $accountId,
-            'total'        => 3,
+            'total'        => $params['limit'] + $faker->numberBetween(1, 50),
             'offset'       => $params['offset'],
             'limit'        => $params['limit'],
-            'transactions' => [
-                [
-                    'transactionId' => 'txn_001',
-                    'type'          => 'debit',
-                    'amount'        => 120.00,
-                    'currency'      => 'EUR',
-                    'description'   => 'Supermarket purchase',
-                    'date'          => '2024-05-20',
-                ],
-                [
-                    'transactionId' => 'txn_002',
-                    'type'          => 'credit',
-                    'amount'        => 2500.00,
-                    'currency'      => 'EUR',
-                    'description'   => 'Salary payment',
-                    'date'          => '2024-05-18',
-                ],
-                [
-                    'transactionId' => 'txn_003',
-                    'type'          => 'debit',
-                    'amount'        => 45.50,
-                    'currency'      => 'EUR',
-                    'description'   => 'Utility bill — electricity',
-                    'date'          => '2024-05-15',
-                ],
-            ],
+            'transactions' => $transactions,
         ];
     }
 
@@ -323,15 +329,16 @@ class FintechTools
         }
 
         // DUMMY — returned when backend is unavailable
+        $faker = $this->faker();
         return [
-            'paymentId' => 'pay_' . substr(md5(uniqid('', true)), 0, 12),
-            'status'    => 'pending',
+            'paymentId' => $faker->uuid(),
+            'status'    => $faker->randomElement(['pending', 'completed']),
             'accountId' => $accountId,
             'billerId'  => $billerId,
             'amount'    => $amount,
             'currency'  => $currency,
             'reference' => $reference,
-            'createdAt' => date('c'),
+            'createdAt' => $faker->dateTimeBetween('-1 minute', 'now')->format('c'),
         ];
     }
 }
