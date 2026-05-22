@@ -10,7 +10,6 @@ use Mcp\Capability\Attribute\Schema;
 use Mcp\Exception\ToolCallException;
 use Mcp\Server;
 use Mcp\Server\Transport\StdioTransport;
-use RuntimeException;
 
 class CalculatorElements
 {
