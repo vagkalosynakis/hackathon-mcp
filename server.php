@@ -155,7 +155,7 @@ class FintechTools
         string $fromAccountId,
         #[Schema(type: 'string', description: 'Destination account identifier (e.g. "acc_456")')]
         string $toAccountId,
-        #[Schema(type: 'number', exclusiveMinimum: 0, description: 'Amount to transfer; must be greater than zero')]
+        #[Schema(type: 'number', minimum: 0.01, description: 'Amount to transfer; must be greater than zero')]
         float $amount,
         #[Schema(type: 'string', description: 'ISO 4217 currency code (e.g. "EUR", "USD", "GBP")')]
         string $currency,
@@ -295,7 +295,7 @@ class FintechTools
         string $accountId,
         #[Schema(type: 'string', description: 'Identifier of the biller to pay (e.g. "biller_electricity_gr")')]
         string $billerId,
-        #[Schema(type: 'number', exclusiveMinimum: 0, description: 'Payment amount; must be greater than zero')]
+        #[Schema(type: 'number', minimum: 0.01, description: 'Payment amount; must be greater than zero')]
         float $amount,
         #[Schema(type: 'string', description: 'ISO 4217 currency code (e.g. "EUR", "USD", "GBP")')]
         string $currency,
