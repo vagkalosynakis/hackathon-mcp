@@ -127,38 +127,23 @@ class FintechTools
     }
 
     /**
-     * Retrieves the current balance for a given bank account.
+     * Retrieves the current balance for the authenticated user's bank account.
      *
-     * Fetches the account list from GET /mock-api/accounts and extracts the
-     * balance and currency for the matching account ID.
-     *
-     * @param string $accountId The unique identifier of the account to query (e.g. "a1001")
+     * Calls GET /mock-api/accounts using the X-Device-Id header to identify the user.
+     * The X-Device-Id is an integer that acts as the user ID and MUST be provided by
+     * the MCP client — ask the user to supply their device/user ID if it is not already
+     * set. The backend returns a single account object for that user. If the backend
+     * returns an empty response or an error, that is returned as-is (no fallback data).
      */
     #[McpTool(name: 'get_balance')]
-    public function getBalance(
-        #[Schema(type: 'string', description: 'The unique identifier of the account to query (e.g. "a1001")')]
-        string $accountId
-    ): array {
-        $accounts = $this->fintechGet('mock-api/accounts');
+    public function getBalance(): array {
+        $result = $this->fintechGet('mock-api/accounts');
 
-        foreach ($accounts as $account) {
-            if (isset($account['id']) && $account['id'] === $accountId) {
-                return [
-                    'accountId' => $accountId,
-                    'balance'   => $account['balance'] ?? 0,
-                    'currency'  => $account['currency'] ?? 'EUR',
-                    'asOf'      => date('c'),
-                ];
-            }
+        if ($result === []) {
+            return ['error' => 'No account data returned. Ensure X-Device-Id is set correctly.'];
         }
 
-        $faker = $this->faker();
-        return [
-            'accountId' => $accountId,
-            'balance'   => $faker->randomFloat(2, 100, 50000),
-            'currency'  => $faker->randomElement(['EUR', 'USD', 'GBP', 'CHF']),
-            'asOf'      => $faker->dateTimeBetween('-1 minute', 'now')->format('c'),
-        ];
+        return $result;
     }
 
     /**
@@ -283,73 +268,6 @@ class FintechTools
             'limit'        => $params['limit'],
             'transactions' => $transactions,
         ];
-    }
-
-    /**
-     * Lists bank accounts, optionally filtered by accountId or name.
-     *
-     * Returns accounts from the fintech backend. Pass no parameters to get all
-     * accounts. Pass `accountId` for an exact-match lookup (e.g. "a1001"). Pass
-     * `name` for a case-insensitive substring match on the account display name.
-     * Returns an empty array when the filter matches nothing.
-     *
-     * Account IDs follow the a#### format (e.g. "a1001"). Note: bill IDs from
-     * get_transactions use b#### (e.g. "b1001"); transaction IDs from
-     * get_account_transactions use t#### (e.g. "t0001").
-     *
-     * Use this tool when the user asks to see their accounts, wants to find a
-     * specific account by ID or name, or needs an account ID before calling
-     * get_account_transactions or send_money.
-     *
-     * @param string|null $accountId Exact account ID to look up (e.g. "a1001")
-     * @param string|null $name      Case-insensitive substring to match against account name
-     * @return array Array of account objects; each has: id (string, e.g. "a1001"),
-     *               name (string), accountNumber (IBAN string), balance (float),
-     *               currency (ISO 4217 string), lastUpdated (ISO 8601 string)
-     */
-    #[McpTool(name: 'get_accounts')]
-    public function getAccounts(?string $accountId = null, ?string $name = null): array
-    {
-        $accounts = $this->fintechGet('mock-api/accounts');
-
-        if ($accounts === []) {
-            $accounts = [
-                [
-                    'id'            => 'a1001',
-                    'name'          => 'Main Current Account',
-                    'accountNumber' => 'GR16 0110 1250 0000 0001 2300 695',
-                    'balance'       => 4821.50,
-                    'currency'      => 'EUR',
-                    'lastUpdated'   => date('c'),
-                ],
-                [
-                    'id'            => 'a1002',
-                    'name'          => 'Savings Account',
-                    'accountNumber' => 'GR16 0110 1250 0000 0001 2300 696',
-                    'balance'       => 12340.00,
-                    'currency'      => 'EUR',
-                    'lastUpdated'   => date('c'),
-                ],
-                [
-                    'id'            => 'a1003',
-                    'name'          => 'Business Account',
-                    'accountNumber' => 'GR16 0110 1250 0000 0001 2300 697',
-                    'balance'       => 31500.75,
-                    'currency'      => 'EUR',
-                    'lastUpdated'   => date('c'),
-                ],
-            ];
-        }
-
-        if ($accountId !== null) {
-            return array_values(array_filter($accounts, fn($a) => $a['id'] === $accountId));
-        }
-
-        if ($name !== null) {
-            return array_values(array_filter($accounts, fn($a) => stripos($a['name'], $name) !== false));
-        }
-
-        return $accounts;
     }
 
     /**
@@ -514,16 +432,16 @@ $server = Server::builder()
     ->setServerInfo('Fintech MCP Server', '1.0.0')
     ->setInstructions(
         'This server provides fintech tools for a banking demo. ' .
-        'ID formats: accounts use a#### (e.g. a1001), transactions use t#### (e.g. t0001), contacts use c#### (e.g. c1001). ' .
+        'ID formats: transactions use t#### (e.g. t0001), contacts use c#### (e.g. c1001). ' .
+        'IMPORTANT: Most tools require an X-Device-Id header (integer user ID) to be set by the MCP client. If a tool returns empty or an error, ask the user to confirm their device/user ID. ' .
         'Available tools: ' .
-        'get_accounts(accountId?, name?) — list bank accounts from /mock-api/accounts; filter by exact accountId or case-insensitive name substring; ' .
-        'get_balance(accountId) — retrieve current account balance and currency from /mock-api/accounts; ' .
+        'get_balance() — retrieve the authenticated user\'s account data (balance, currency, account details) from GET /mock-api/accounts; requires X-Device-Id header to identify the user; if empty or error, ask the user for their device ID; ' .
         'get_account_transactions(accountId, limit?, offset?, fromDate?, toDate?) — list paginated transactions for a specific account from /mock-api/accounts/{id}/transactions; ' .
         'get_transactions() — list all transactions from /mock-api/transactions; each has id, provider, amount, currency, dueDate, status (paid|unpaid), category, rf reference; ' .
         'get_contacts() — list all contacts from /mock-api/contacts; each has id (string), name, IBAN accountNumber, initials; ' .
         'get_contact(contactId) — retrieve a single contact by ID from /mock-api/contacts/{id}; ' .
         'send_money(fromAccountId, toAccountId, amount) — POST /mock-api/transfer; fromAccountId and toAccountId are string IDs obtainable from get_contacts (/mock-api/contacts); amount is integer cents (e.g. 50000 = €500.00); X-Device-Id forwarded automatically. ' .
-        'All tools fall back to demo data when the backend is unavailable.'
+        'If the backend is unavailable, tools return an error response.'
     )
     ->setDiscovery(
         basePath: __DIR__,
