@@ -42,7 +42,6 @@ class FintechTools
     {
         $baseUrl = $this->getBaseUrl();
         if ($baseUrl === '') {
-            file_put_contents('php://stdout', '[fintechGet] FINTECH_API_BASE_URL not set' . PHP_EOL);
             return [];
         }
 
@@ -56,11 +55,8 @@ class FintechTools
             $headers[] = 'X-Device-Id: ' . $this->deviceId;
         }
 
-        file_put_contents('php://stdout', '[fintechGet] GET ' . $url . ' headers=' . json_encode($headers) . PHP_EOL);
-
         $ch = curl_init($url);
         if ($ch === false) {
-            file_put_contents('php://stdout', '[fintechGet] curl_init failed' . PHP_EOL);
             return [];
         }
 
@@ -75,8 +71,6 @@ class FintechTools
         $body = curl_exec($ch);
         $status = curl_getinfo($ch, CURLINFO_HTTP_CODE);
         curl_close($ch);
-
-        file_put_contents('php://stdout', '[fintechGet] status=' . $status . ' body=' . $body . PHP_EOL);
 
         if ($body === false) {
             return ['error' => 'Request failed (curl error)'];
@@ -96,16 +90,12 @@ class FintechTools
     {
         $baseUrl = $this->getBaseUrl();
         if ($baseUrl === '') {
+            file_put_contents('php://stdout', '[fintechPost] FINTECH_API_BASE_URL not set' . PHP_EOL);
             return [];
         }
 
         $url = $baseUrl . '/' . ltrim($path, '/');
         $json = json_encode($body);
-
-        $ch = curl_init($url);
-        if ($ch === false) {
-            return [];
-        }
 
         $headers = [
             'Accept: application/json',
@@ -114,6 +104,14 @@ class FintechTools
         ];
         if ($this->deviceId !== null) {
             $headers[] = 'X-Device-Id: ' . $this->deviceId;
+        }
+
+        file_put_contents('php://stdout', '[fintechPost] POST ' . $url . ' headers=' . json_encode($headers) . ' body=' . $json . PHP_EOL);
+
+        $ch = curl_init($url);
+        if ($ch === false) {
+            file_put_contents('php://stdout', '[fintechPost] curl_init failed' . PHP_EOL);
+            return [];
         }
 
         curl_setopt_array($ch, [
@@ -129,6 +127,8 @@ class FintechTools
         $responseBody = curl_exec($ch);
         $status = curl_getinfo($ch, CURLINFO_HTTP_CODE);
         curl_close($ch);
+
+        file_put_contents('php://stdout', '[fintechPost] status=' . $status . ' body=' . $responseBody . PHP_EOL);
 
         if ($responseBody === false) {
             return ['error' => 'Request failed (curl error)'];
@@ -155,14 +155,9 @@ class FintechTools
      */
     #[McpTool(name: 'get_balance')]
     public function getBalance(): array {
-        file_put_contents('php://stdout', '[get_balance] deviceId=' . ($this->deviceId ?? 'null') . PHP_EOL);
-
         $result = $this->fintechGet('mock-api/accounts');
 
-        file_put_contents('php://stdout', '[get_balance] fintechGet result=' . json_encode($result) . PHP_EOL);
-
         if ($result === []) {
-            file_put_contents('php://stdout', '[get_balance] returning generic error (empty result)' . PHP_EOL);
             return ['error' => 'No account data returned. Ensure X-Device-Id is set correctly.'];
         }
 
@@ -203,7 +198,11 @@ class FintechTools
             'amount' => $amount,
         ];
 
+        file_put_contents('php://stdout', '[send_money] deviceId=' . ($this->deviceId ?? 'null') . ' payload=' . json_encode($payload) . PHP_EOL);
+
         $result = $this->fintechPost('mock-api/transfer', $payload);
+
+        file_put_contents('php://stdout', '[send_money] fintechPost result=' . json_encode($result) . PHP_EOL);
 
         if ($result !== []) {
             return $result;
