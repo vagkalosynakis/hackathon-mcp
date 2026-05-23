@@ -497,8 +497,6 @@ $deviceId = null;
 if ($rawDeviceId !== '' && ctype_digit($rawDeviceId) && (int) $rawDeviceId > 0) {
     $deviceId = (int) $rawDeviceId;
 }
-fwrite(STDERR, '[device_id=' . ($deviceId !== null ? $deviceId : 'unknown') . ']' . PHP_EOL);
-
 // ── Build the MCP server ──────────────────────────────────────────────────────
 
 $cache = new \Symfony\Component\Cache\Psr16Cache(
