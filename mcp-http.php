@@ -17,6 +17,12 @@ use Nyholm\Psr7Server\ServerRequestCreator;
 class FintechTools
 {
     private ?\Faker\Generator $fakerInstance = null;
+    private ?int $deviceId;
+
+    public function __construct(?int $deviceId = null)
+    {
+        $this->deviceId = $deviceId;
+    }
 
     private function faker(): \Faker\Generator
     {
@@ -49,12 +55,17 @@ class FintechTools
             return [];
         }
 
+        $headers = ['Accept: application/json'];
+        if ($this->deviceId !== null) {
+            $headers[] = 'X-Device-Id: ' . $this->deviceId;
+        }
+
         curl_setopt_array($ch, [
             CURLOPT_RETURNTRANSFER => true,
             CURLOPT_FOLLOWLOCATION => true,
             CURLOPT_TIMEOUT => 10,
             CURLOPT_CONNECTTIMEOUT => 5,
-            CURLOPT_HTTPHEADER => ['Accept: application/json'],
+            CURLOPT_HTTPHEADER => $headers,
         ]);
 
         $body = curl_exec($ch);
@@ -84,6 +95,15 @@ class FintechTools
             return [];
         }
 
+        $headers = [
+            'Accept: application/json',
+            'Content-Type: application/json',
+            'Content-Length: ' . strlen($json),
+        ];
+        if ($this->deviceId !== null) {
+            $headers[] = 'X-Device-Id: ' . $this->deviceId;
+        }
+
         curl_setopt_array($ch, [
             CURLOPT_RETURNTRANSFER => true,
             CURLOPT_FOLLOWLOCATION => true,
@@ -91,11 +111,7 @@ class FintechTools
             CURLOPT_CONNECTTIMEOUT => 5,
             CURLOPT_POST => true,
             CURLOPT_POSTFIELDS => $json,
-            CURLOPT_HTTPHEADER => [
-                'Accept: application/json',
-                'Content-Type: application/json',
-                'Content-Length: ' . strlen($json),
-            ],
+            CURLOPT_HTTPHEADER => $headers,
         ]);
 
         $responseBody = curl_exec($ch);
@@ -478,7 +494,22 @@ class FintechTools
     }
 }
 
-// ── Build the MCP server (same config as server.php) ─────────────────────────
+// ── Build a PSR-7 ServerRequest from the current HTTP request ─────────────────
+
+$psr17 = new Psr17Factory();
+$creator = new ServerRequestCreator($psr17, $psr17, $psr17, $psr17);
+$request = $creator->fromGlobals();
+
+// ── Extract and validate X-Device-Id header ───────────────────────────────────
+
+$rawDeviceId = $request->getHeaderLine('X-Device-Id');
+$deviceId = null;
+if ($rawDeviceId !== '' && ctype_digit($rawDeviceId) && (int) $rawDeviceId > 0) {
+    $deviceId = (int) $rawDeviceId;
+}
+fwrite(STDERR, '[device_id=' . ($deviceId !== null ? $deviceId : 'unknown') . ']' . PHP_EOL);
+
+// ── Build the MCP server ──────────────────────────────────────────────────────
 
 $cache = new \Symfony\Component\Cache\Psr16Cache(
     new \Symfony\Component\Cache\Adapter\FilesystemAdapter('mcp-discovery', 0, __DIR__ . '/var/cache')
@@ -486,8 +517,12 @@ $cache = new \Symfony\Component\Cache\Psr16Cache(
 
 $sessionStore = new FileSessionStore(__DIR__ . '/var/sessions', 3600);
 
+$container = new \Mcp\Capability\Registry\Container();
+$container->set(FintechTools::class, new FintechTools($deviceId));
+
 $server = Server::builder()
     ->setSession($sessionStore)
+    ->setContainer($container)
     ->setServerInfo('Fintech MCP Server', '1.0.0')
     ->setInstructions(
         'This server provides fintech tools for a banking demo. ' .
@@ -509,12 +544,6 @@ $server = Server::builder()
         cache: $cache
     )
     ->build();
-
-// ── Build a PSR-7 ServerRequest from the current HTTP request ─────────────────
-
-$psr17 = new Psr17Factory();
-$creator = new ServerRequestCreator($psr17, $psr17, $psr17, $psr17);
-$request = $creator->fromGlobals();
 
 // ── Run through the HTTP transport and emit the PSR-7 response ───────────────
 
