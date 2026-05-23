@@ -193,9 +193,9 @@ class FintechTools
         }
 
         $payload = [
-            'from'   => $fromAccountId,
-            'to'     => $toAccountId,
-            'amount' => $amount,
+            'fromAccount' => $fromAccountId,
+            'toAccount'   => $toAccountId,
+            'amount'      => $amount,
         ];
 
         file_put_contents('php://stdout', '[send_money] deviceId=' . ($this->deviceId ?? 'null') . ' payload=' . json_encode($payload) . PHP_EOL);
