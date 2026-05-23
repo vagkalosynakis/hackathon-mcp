@@ -129,17 +129,27 @@ class FintechTools
     /**
      * Retrieves the current balance for a given bank account.
      *
-     * @param string $accountId The unique identifier of the account to query (e.g. "acc_123")
+     * Fetches the account list from GET /mock-api/accounts and extracts the
+     * balance and currency for the matching account ID.
+     *
+     * @param string $accountId The unique identifier of the account to query (e.g. "a1001")
      */
     #[McpTool(name: 'get_balance')]
     public function getBalance(
-        #[Schema(type: 'string', description: 'The unique identifier of the account to query (e.g. "acc_123")')]
+        #[Schema(type: 'string', description: 'The unique identifier of the account to query (e.g. "a1001")')]
         string $accountId
     ): array {
-        $result = $this->fintechGet('accounts/' . rawurlencode($accountId) . '/balance');
+        $accounts = $this->fintechGet('mock-api/accounts');
 
-        if ($result !== []) {
-            return $result;
+        foreach ($accounts as $account) {
+            if (isset($account['id']) && $account['id'] === $accountId) {
+                return [
+                    'accountId' => $accountId,
+                    'balance'   => $account['balance'] ?? 0,
+                    'currency'  => $account['currency'] ?? 'EUR',
+                    'asOf'      => date('c'),
+                ];
+            }
         }
 
         $faker = $this->faker();
@@ -152,38 +162,40 @@ class FintechTools
     }
 
     /**
-     * Initiates a money transfer from one account to another.
+     * Initiates a money transfer from one account to another via POST /mock-api/transfer.
+     *
+     * Both `fromAccountId` and `toAccountId` are string account identifiers (e.g. "a1001").
+     * Account IDs MUST be obtained from GET /mock-api/contacts (the `get_contacts` tool) —
+     * call get_contacts first to find the correct ID for the recipient. The `amount` MUST
+     * be provided as an integer in cents (e.g. 50000 = €500.00). The X-Device-Id header
+     * is forwarded to the backend automatically for device verification.
+     *
+     * @param string $fromAccountId Source account ID (string, e.g. "a1001") — obtain from GET /mock-api/contacts
+     * @param string $toAccountId   Destination account ID (string, e.g. "a1002") — obtain from GET /mock-api/contacts
+     * @param int    $amount        Amount in integer cents (e.g. 50000 = €500.00); must be greater than zero
      *
      * @throws ToolCallException When amount is not greater than zero
      */
     #[McpTool(name: 'send_money')]
     public function sendMoney(
-        #[Schema(type: 'string', description: 'Source account identifier (e.g. "acc_123")')]
+        #[Schema(type: 'string', description: 'Source account ID (string, e.g. "a1001"); obtain from GET /mock-api/contacts via get_contacts')]
         string $fromAccountId,
-        #[Schema(type: 'string', description: 'Destination account identifier (e.g. "acc_456")')]
+        #[Schema(type: 'string', description: 'Destination account ID (string, e.g. "a1002"); obtain from GET /mock-api/contacts via get_contacts')]
         string $toAccountId,
-        #[Schema(type: 'number', minimum: 0.01, description: 'Amount to transfer; must be greater than zero')]
-        float $amount,
-        #[Schema(type: 'string', description: 'ISO 4217 currency code (e.g. "EUR", "USD", "GBP")')]
-        string $currency,
-        #[Schema(type: 'string', description: 'Optional free-text payment reference visible to both parties (e.g. "Rent June")')]
-        ?string $reference = null
+        #[Schema(type: 'integer', minimum: 1, description: 'Amount in integer cents (e.g. 1000 = €10.00); must be greater than zero')]
+        int $amount
     ): array {
         if ($amount <= 0) {
             throw new ToolCallException('amount must be greater than zero.');
         }
 
         $payload = [
-            'fromAccountId' => $fromAccountId,
-            'toAccountId'   => $toAccountId,
-            'amount'        => $amount,
-            'currency'      => $currency,
+            'from'   => $fromAccountId,
+            'to'     => $toAccountId,
+            'amount' => $amount,
         ];
-        if ($reference !== null) {
-            $payload['reference'] = $reference;
-        }
 
-        $result = $this->fintechPost('transfers', $payload);
+        $result = $this->fintechPost('mock-api/transfer', $payload);
 
         if ($result !== []) {
             return $result;
@@ -193,11 +205,9 @@ class FintechTools
         return [
             'transferId'    => $faker->uuid(),
             'status'        => $faker->randomElement(['pending', 'completed']),
-            'fromAccountId' => $fromAccountId,
-            'toAccountId'   => $toAccountId,
+            'from'          => $fromAccountId,
+            'to'            => $toAccountId,
             'amount'        => $amount,
-            'currency'      => $currency,
-            'reference'     => $reference,
             'createdAt'     => $faker->dateTimeBetween('-1 minute', 'now')->format('c'),
         ];
     }
@@ -241,7 +251,7 @@ class FintechTools
             $params['toDate'] = $toDate;
         }
 
-        $result = $this->fintechGet('accounts/' . rawurlencode($accountId) . '/transactions', $params);
+        $result = $this->fintechGet('mock-api/accounts/' . rawurlencode($accountId) . '/transactions', $params);
 
         if ($result !== []) {
             return $result;
@@ -276,57 +286,6 @@ class FintechTools
     }
 
     /**
-     * Submits a bill payment to a registered biller on behalf of an account.
-     *
-     * @throws ToolCallException When amount is not greater than zero
-     */
-    #[McpTool(name: 'pay_bill')]
-    public function payBill(
-        #[Schema(type: 'string', description: 'The account from which the payment is debited (e.g. "acc_123")')]
-        string $accountId,
-        #[Schema(type: 'string', description: 'Identifier of the biller to pay (e.g. "biller_electricity_gr")')]
-        string $billerId,
-        #[Schema(type: 'number', minimum: 0.01, description: 'Payment amount; must be greater than zero')]
-        float $amount,
-        #[Schema(type: 'string', description: 'ISO 4217 currency code (e.g. "EUR", "USD", "GBP")')]
-        string $currency,
-        #[Schema(type: 'string', description: 'Optional customer reference or invoice number for the biller (e.g. "INV-2024-05")')]
-        ?string $reference = null
-    ): array {
-        if ($amount <= 0) {
-            throw new ToolCallException('amount must be greater than zero.');
-        }
-
-        $payload = [
-            'accountId' => $accountId,
-            'billerId'  => $billerId,
-            'amount'    => $amount,
-            'currency'  => $currency,
-        ];
-        if ($reference !== null) {
-            $payload['reference'] = $reference;
-        }
-
-        $result = $this->fintechPost('bill-payments', $payload);
-
-        if ($result !== []) {
-            return $result;
-        }
-
-        $faker = $this->faker();
-        return [
-            'paymentId' => $faker->uuid(),
-            'status'    => $faker->randomElement(['pending', 'completed']),
-            'accountId' => $accountId,
-            'billerId'  => $billerId,
-            'amount'    => $amount,
-            'currency'  => $currency,
-            'reference' => $reference,
-            'createdAt' => $faker->dateTimeBetween('-1 minute', 'now')->format('c'),
-        ];
-    }
-
-    /**
      * Lists bank accounts, optionally filtered by accountId or name.
      *
      * Returns accounts from the fintech backend. Pass no parameters to get all
@@ -351,7 +310,7 @@ class FintechTools
     #[McpTool(name: 'get_accounts')]
     public function getAccounts(?string $accountId = null, ?string $name = null): array
     {
-        $accounts = $this->fintechGet('accounts');
+        $accounts = $this->fintechGet('mock-api/accounts');
 
         if ($accounts === []) {
             $accounts = [
@@ -415,7 +374,7 @@ class FintechTools
     #[McpTool(name: 'get_transactions')]
     public function getTransactions(): array
     {
-        $result = $this->fintechGet('bills');
+        $result = $this->fintechGet('mock-api/transactions');
 
         if ($result !== []) {
             return $result;
@@ -471,7 +430,7 @@ class FintechTools
     #[McpTool(name: 'get_contacts')]
     public function getContacts(): array
     {
-        $result = $this->fintechGet('contacts');
+        $result = $this->fintechGet('mock-api/contacts');
 
         if ($result !== []) {
             return $result;
@@ -490,6 +449,37 @@ class FintechTools
                 'accountNumber' => 'GR16 0110 1250 0000 0002 1000 002',
                 'initials'      => 'MG',
             ],
+        ];
+    }
+
+    /**
+     * Retrieves a single contact by ID from GET /mock-api/contacts/{id}.
+     *
+     * Use this tool when you already know the contact ID and need their full details
+     * (name, IBAN account number, initials) without fetching the entire contact list.
+     *
+     * @param string $contactId The contact's unique identifier (e.g. "c1001")
+     * @return array Contact object with: id (string), name (string), accountNumber (IBAN string), initials (string, 2 chars)
+     */
+    #[McpTool(name: 'get_contact')]
+    public function getContact(
+        #[Schema(type: 'string', description: 'The contact\'s unique identifier (e.g. "c1001")')]
+        string $contactId
+    ): array {
+        $result = $this->fintechGet('mock-api/contacts/' . rawurlencode($contactId));
+
+        if ($result !== []) {
+            return $result;
+        }
+
+        $faker = $this->faker();
+        $first = $faker->firstName();
+        $last  = $faker->lastName();
+        return [
+            'id'            => $contactId,
+            'name'          => $first . ' ' . $last,
+            'accountNumber' => $faker->iban('GR'),
+            'initials'      => strtoupper(substr($first, 0, 1) . substr($last, 0, 1)),
         ];
     }
 }
@@ -526,15 +516,15 @@ $server = Server::builder()
     ->setServerInfo('Fintech MCP Server', '1.0.0')
     ->setInstructions(
         'This server provides fintech tools for a banking demo. ' .
-        'ID formats: accounts use a#### (e.g. a1001), bills use b#### (e.g. b1001), account transactions use t#### (e.g. t0001), contacts use c#### (e.g. c1001). ' .
+        'ID formats: accounts use a#### (e.g. a1001), transactions use t#### (e.g. t0001), contacts use c#### (e.g. c1001). ' .
         'Available tools: ' .
-        'get_accounts(accountId?, name?) — list bank accounts; filter by exact accountId or case-insensitive name substring; returns all when no filter supplied; ' .
-        'get_transactions() — list all bills from /bills with id (b####), provider, amount, currency, dueDate, status (paid|unpaid), category, and rf reference; ' .
-        'get_contacts() — list all contacts with id, name, IBAN accountNumber, and initials; ' .
-        'get_balance(accountId) — retrieve current account balance and currency; ' .
-        'get_account_transactions(accountId, limit?, offset?, fromDate?, toDate?) — list paginated transactions (t####) for a specific account from /transactions; ' .
-        'send_money(fromAccountId, toAccountId, amount, currency, reference?) — initiate a money transfer between accounts; ' .
-        'pay_bill(accountId, billerId, amount, currency, reference?) — submit a bill payment to a registered biller. ' .
+        'get_accounts(accountId?, name?) — list bank accounts from /mock-api/accounts; filter by exact accountId or case-insensitive name substring; ' .
+        'get_balance(accountId) — retrieve current account balance and currency from /mock-api/accounts; ' .
+        'get_account_transactions(accountId, limit?, offset?, fromDate?, toDate?) — list paginated transactions for a specific account from /mock-api/accounts/{id}/transactions; ' .
+        'get_transactions() — list all transactions from /mock-api/transactions; each has id, provider, amount, currency, dueDate, status (paid|unpaid), category, rf reference; ' .
+        'get_contacts() — list all contacts from /mock-api/contacts; each has id (string), name, IBAN accountNumber, initials; ' .
+        'get_contact(contactId) — retrieve a single contact by ID from /mock-api/contacts/{id}; ' .
+        'send_money(fromAccountId, toAccountId, amount) — POST /mock-api/transfer; fromAccountId and toAccountId are string IDs obtainable from get_contacts (/mock-api/contacts); amount is integer cents (e.g. 50000 = €500.00); X-Device-Id forwarded automatically. ' .
         'All tools fall back to demo data when the backend is unavailable.'
     )
     ->setDiscovery(
