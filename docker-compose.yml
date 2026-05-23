@@ -10,7 +10,7 @@ services:
       - ./:/app
       - ./docker/nginx/mcp.conf:/opt/docker/etc/nginx/vhost.common.d/20-mcp.conf:ro
     ports:
-      - "8080:80"
+      - "8081:80"
     environment:
       FINTECH_API_BASE_URL: ${FINTECH_API_BASE_URL:-}
     networks:
