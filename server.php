@@ -208,21 +208,22 @@ class FintechTools
     }
 
     /**
-     * Retrieves a paginated list of past transactions for a given account.
+     * Retrieves a paginated list of past transactions for a specific account.
      *
      * Returns transactions in reverse-chronological order. Supports offset-based
      * pagination and optional date range filtering. Use this tool when the user asks
-     * about their transaction history, recent payments, or account activity.
+     * about the history of a specific account, recent payments on an account, or
+     * account activity for a known accountId.
      *
-     * @param string   $accountId  The account whose transaction history to retrieve (e.g. "acc_123")
+     * @param string   $accountId  The account whose transaction history to retrieve (e.g. "a1001")
      * @param int|null $limit      Maximum number of transactions to return (default 20, max 100)
      * @param int|null $offset     Zero-based offset for pagination (default 0)
      * @param string|null $fromDate ISO 8601 date — only transactions on or after this date (e.g. "2024-01-01")
      * @param string|null $toDate   ISO 8601 date — only transactions on or before this date (e.g. "2024-12-31")
      * @return array Paginated result with total, offset, limit, and transactions array
      */
-    #[McpTool(name: 'get_transactions')]
-    public function getTransactions(
+    #[McpTool(name: 'get_account_transactions')]
+    public function getAccountTransactions(
         #[Schema(type: 'string', description: 'The account whose transaction history to retrieve (e.g. "acc_123")')]
         string $accountId,
         #[Schema(type: 'integer', minimum: 1, maximum: 100, description: 'Maximum number of transactions to return (default 20, max 100)')]
@@ -341,6 +342,153 @@ class FintechTools
             'createdAt' => $faker->dateTimeBetween('-1 minute', 'now')->format('c'),
         ];
     }
+
+    /**
+     * Lists all bank accounts available in the system.
+     *
+     * Returns the complete list of accounts from the fintech backend. Each account
+     * includes its unique identifier (format: a####, e.g. "a1001"), display name,
+     * IBAN account number, current balance, currency, and last-updated timestamp.
+     *
+     * Use this tool when the user asks to see their accounts, wants to know which
+     * accounts exist, or needs an account ID before calling another tool such as
+     * get_transactions or send_money.
+     *
+     * @return array Array of account objects; each has: id (string, e.g. "a1001"),
+     *               name (string), accountNumber (IBAN string), balance (float),
+     *               currency (ISO 4217 string), lastUpdated (ISO 8601 string)
+     */
+    #[McpTool(name: 'get_accounts')]
+    public function getAccounts(): array
+    {
+        $result = $this->fintechGet('accounts');
+
+        if ($result !== []) {
+            return $result;
+        }
+
+        // DUMMY — returned when backend is unavailable
+        return [
+            [
+                'id'            => 'a1001',
+                'name'          => 'Main Current Account',
+                'accountNumber' => 'GR16 0110 1250 0000 0001 2000 001',
+                'balance'       => 4821.50,
+                'currency'      => 'EUR',
+                'lastUpdated'   => date('c'),
+            ],
+            [
+                'id'            => 'a1002',
+                'name'          => 'Savings Account',
+                'accountNumber' => 'GR16 0110 1250 0000 0001 2000 002',
+                'balance'       => 31500.75,
+                'currency'      => 'EUR',
+                'lastUpdated'   => date('c'),
+            ],
+        ];
+    }
+
+    /**
+     * Lists all transactions (bills) recorded in the system.
+     *
+     * Returns the complete list of transactions from the fintech backend. Each
+     * transaction represents a bill and includes its unique identifier (format:
+     * t####, e.g. "t1001"), the provider/biller name, amount, currency, due date,
+     * payment status, category, and structured payment reference (RF code).
+     *
+     * Use this tool when the user asks to see their bills, pending payments,
+     * transaction history, or wants to find a specific bill before paying it.
+     *
+     * Status values: "paid" or "unpaid".
+     * Category values: "electricity", "water", "phone", "internet", "gas".
+     *
+     * @return array Array of transaction objects; each has: id (string, e.g. "t1001"),
+     *               provider (string), amount (float), currency (ISO 4217 string),
+     *               dueDate (YYYY-MM-DD string), status ("paid"|"unpaid"),
+     *               category (string), rf (string payment reference)
+     */
+    #[McpTool(name: 'get_transactions')]
+    public function getTransactions(): array
+    {
+        $result = $this->fintechGet('bills');
+
+        if ($result !== []) {
+            return $result;
+        }
+
+        // DUMMY — returned when backend is unavailable
+        return [
+            [
+                'id'       => 't1001',
+                'provider' => 'DEH',
+                'amount'   => 87.40,
+                'currency' => 'EUR',
+                'dueDate'  => '2026-06-15',
+                'status'   => 'unpaid',
+                'category' => 'electricity',
+                'rf'       => 'RF12345678901234',
+            ],
+            [
+                'id'       => 't1002',
+                'provider' => 'EYDAP',
+                'amount'   => 28.60,
+                'currency' => 'EUR',
+                'dueDate'  => '2026-06-20',
+                'status'   => 'unpaid',
+                'category' => 'water',
+                'rf'       => 'RF98765432109876',
+            ],
+            [
+                'id'       => 't1003',
+                'provider' => 'Cosmote',
+                'amount'   => 45.00,
+                'currency' => 'EUR',
+                'dueDate'  => '2026-05-30',
+                'status'   => 'paid',
+                'category' => 'phone',
+                'rf'       => 'RF11223344556677',
+            ],
+        ];
+    }
+
+    /**
+     * Lists all contacts stored in the system.
+     *
+     * Returns the complete list of contacts from the fintech backend. Each contact
+     * includes their unique identifier (format: c####, e.g. "c1001"), full name,
+     * IBAN account number, and two-letter initials.
+     *
+     * Use this tool when the user wants to see their contacts, find a recipient for
+     * a transfer, or look up an account number before calling send_money.
+     *
+     * @return array Array of contact objects; each has: id (string, e.g. "c1001"),
+     *               name (string), accountNumber (IBAN string), initials (string, 2 chars)
+     */
+    #[McpTool(name: 'get_contacts')]
+    public function getContacts(): array
+    {
+        $result = $this->fintechGet('contacts');
+
+        if ($result !== []) {
+            return $result;
+        }
+
+        // DUMMY — returned when backend is unavailable
+        return [
+            [
+                'id'            => 'c1001',
+                'name'          => 'Nikos Papadopoulos',
+                'accountNumber' => 'GR16 0110 1250 0000 0002 1000 001',
+                'initials'      => 'NP',
+            ],
+            [
+                'id'            => 'c1002',
+                'name'          => 'Maria Georgiou',
+                'accountNumber' => 'GR16 0110 1250 0000 0002 1000 002',
+                'initials'      => 'MG',
+            ],
+        ];
+    }
 }
 
 $cache = new \Symfony\Component\Cache\Psr16Cache(
@@ -351,10 +499,14 @@ $server = Server::builder()
     ->setServerInfo('Fintech MCP Server', '1.0.0')
     ->setInstructions(
         'This server provides fintech tools for a banking demo. ' .
+        'ID formats: accounts use a#### (e.g. a1001), transactions use t#### (e.g. t1001), contacts use c#### (e.g. c1001). ' .
         'Available tools: ' .
+        'get_accounts() — list all bank accounts with id, name, IBAN, balance, currency, and lastUpdated; ' .
+        'get_transactions() — list all bills/transactions with id, provider, amount, currency, dueDate, status (paid|unpaid), category, and rf reference; ' .
+        'get_contacts() — list all contacts with id, name, IBAN accountNumber, and initials; ' .
         'get_balance(accountId) — retrieve current account balance and currency; ' .
+        'get_account_transactions(accountId, limit?, offset?, fromDate?, toDate?) — list paginated transactions for a specific account; ' .
         'send_money(fromAccountId, toAccountId, amount, currency, reference?) — initiate a money transfer between accounts; ' .
-        'get_transactions(accountId, limit?, offset?, fromDate?, toDate?) — list past transactions with optional pagination and date filtering; ' .
         'pay_bill(accountId, billerId, amount, currency, reference?) — submit a bill payment to a registered biller. ' .
         'All tools fall back to demo data when the backend is unavailable.'
     )
