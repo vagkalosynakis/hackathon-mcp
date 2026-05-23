@@ -170,12 +170,12 @@ class FintechTools
      * Both `fromAccountId` and `toAccountId` are string account identifiers (e.g. "a1001").
      * Account IDs MUST be obtained from GET /mock-api/contacts (the `get_contacts` tool) —
      * call get_contacts first to find the correct ID for the recipient. The `amount` MUST
-     * be provided as an integer in cents (e.g. 50000 = €500.00). The X-Device-Id header
+     * be provided as a decimal EUR float (e.g. 500.00 = €500.00). The X-Device-Id header
      * is forwarded to the backend automatically for device verification.
      *
      * @param string $fromAccountId Source account ID (string, e.g. "a1001") — obtain from GET /mock-api/contacts
      * @param string $toAccountId   Destination account ID (string, e.g. "a1002") — obtain from GET /mock-api/contacts
-     * @param int    $amount        Amount in integer cents (e.g. 50000 = €500.00); must be greater than zero
+     * @param float  $amount        Amount in EUR (e.g. 500.00 = €500.00); must be greater than zero
      *
      * @throws ToolCallException When amount is not greater than zero
      */
@@ -185,8 +185,8 @@ class FintechTools
         string $fromAccountId,
         #[Schema(type: 'string', description: 'Destination account ID (string, e.g. "a1002"); obtain from GET /mock-api/contacts via get_contacts')]
         string $toAccountId,
-        #[Schema(type: 'integer', minimum: 1, description: 'Amount in integer cents (e.g. 1000 = €10.00); must be greater than zero')]
-        int $amount
+        #[Schema(type: 'number', minimum: 0.01, description: 'Amount in EUR (e.g. 500.00 = €500.00); must be greater than zero')]
+        float $amount
     ): array {
         if ($amount <= 0) {
             throw new ToolCallException('amount must be greater than zero.');
@@ -462,7 +462,7 @@ $server = Server::builder()
         'get_transactions() — list all transactions from /mock-api/transactions; each has id, provider, amount, currency, dueDate, status (paid|unpaid), category, rf reference; ' .
         'get_contacts() — list all contacts from /mock-api/contacts; each has id (string), name, IBAN accountNumber, initials; ' .
         'get_contact(contactId) — retrieve a single contact by ID from /mock-api/contacts/{id}; ' .
-        'send_money(fromAccountId, toAccountId, amount) — POST /mock-api/transfer; fromAccountId and toAccountId are string IDs obtainable from get_contacts (/mock-api/contacts); amount is integer cents (e.g. 50000 = €500.00); X-Device-Id forwarded automatically. ' .
+        'send_money(fromAccountId, toAccountId, amount) — POST /mock-api/transfer; fromAccountId and toAccountId are string IDs obtainable from get_contacts (/mock-api/contacts); amount is a decimal euro float (e.g. 500.00 = €500.00); X-Device-Id forwarded automatically. ' .
         'If the backend is unavailable, tools return an error response.'
     )
     ->setDiscovery(
